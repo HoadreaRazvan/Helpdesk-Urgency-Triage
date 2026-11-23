@@ -1,0 +1,27 @@
+{
+  "frozen_at": "2026-11-23T15:33:53+00:00",
+  "model": {
+    "id": "logreg_C10_tone",
+    "name": "Model A \u00b7 Logistic regression",
+    "family": "logreg",
+    "params": "C=10.0, + tone features"
+  },
+  "threshold": 0.1,
+  "costs": {
+    "fn": 5.0,
+    "fp": 1.0
+  },
+  "data_sha256": "c2c9bfce42a7d8e1f104eec1f4c243c673ca9394c4267faba27474b28ee915aa",
+  "split_ids_sha256": {
+    "train": "9f3a2b95cd5f06512e5cf355817ad68c1d009ee3c27cf88ddd031ffcce46012b",
+    "val": "aba0a706a9a7f8f0ef59b44dfb13771a0fba74faff4b4e7b4fbf8aeade921620",
+    "test": "82ebd0c80a1f0c5598e0b8d28893ed385cdd81f1fa6428df37b9dc2c08e75195"
+  },
+  "val_scores_sha256": "d75221c8bba39d4db8eadd0df262649adc3c063946978e62da88226ebd7abe2a",
+  "versions": {
+    "python": "3.15.0",
+    "scikit-learn": "1.9.1",
+    "numpy": "2.5.4",
+    "pandas": "3.0.6"
+  }
+}

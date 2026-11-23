@@ -4,8 +4,9 @@
 * Keyword rule: a transparent, hand-written rule on the ticket text. It flags
   tickets that describe *impact* (people cannot work) or *time pressure*.
 * Shouting rule: flags tickets that say "urgent" or "ASAP". It is not a
-  required baseline. It is here to show that loud words and real urgency are
-  not the same thing.
+  required baseline. It shows that the word alone is a poor signal: it
+  matches a calm "Please treat as urgent." (almost always urgent), a shouted
+  "URGENT!!!" (rarely urgent) and a "not urgent" alike.
 """
 from __future__ import annotations
 

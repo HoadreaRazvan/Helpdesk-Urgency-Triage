@@ -55,10 +55,48 @@ def cmd_baselines(paths: Paths, args) -> None:
     print(text)
 
 
+def cmd_run(paths: Paths, args) -> None:
+    from .pipeline import run_development
+    from .split import freeze_split
+
+    freeze_split(paths)  # no-op when the split is already frozen
+    r = run_development(paths)
+    v = r["validation"]
+    print(f"\nFrozen: {r['model']['id']} at threshold {r['threshold']:.2f} -> {paths.frozen_config}")
+    print(f"Validation: recall {v['recall']:.2f}, precision {v['precision']:.2f}, "
+          f"{v['flag_rate']:.0%} flagged, cost {v['cost_per_100']:.1f} per 100 tickets")
+    print(f"Reports: {paths.reports}")
+
+
+def cmd_test(paths: Paths, args) -> None:
+    from .config import TEST_CONFIRMATION
+    from .final import run_final_test, sealed_test_status
+
+    status = sealed_test_status(paths)
+    if status["used"]:
+        print(f"The test set was already used on {status['lock']['opened_at']}.")
+        if status["results"]:
+            t = status["results"]
+            print(f"Test: recall {t['recall']:.2f}, precision {t['precision']:.2f}, "
+                  f"cost {t['cost_per_100']:.1f} per 100 tickets")
+        return
+    if args.confirm is None:
+        print("The test set is sealed and can be opened only once, with frozen settings.")
+        print(f'To open it: python -m triage test --confirm "{TEST_CONFIRMATION}"')
+        return
+    t = run_final_test(paths, args.confirm)
+    print(f"Test ({t['tickets']} tickets): recall {t['recall']:.2f}, precision {t['precision']:.2f}, "
+          f"F1 {t['f1']:.2f}, cost {t['cost_per_100']:.1f} per 100 tickets")
+    print(f"TP {t['tp']}  FN {t['fn']}  FP {t['fp']}  TN {t['tn']}")
+    print(f"Results: {paths.test_results}  ·  model card updated")
+
+
 COMMANDS = {
     "audit": (cmd_audit, "L5: audit columns, cleaning, leakage, requesters and drift"),
     "split": (cmd_split, "L5: freeze the time-based train / validation / test split"),
     "baselines": (cmd_baselines, "L5: evaluate the two baselines on validation"),
+    "run": (cmd_run, "L6-L7: experiments, threshold, calibration, errors, shifts; freeze settings"),
+    "test": (cmd_test, "L8: open the sealed test set once (needs --confirm)"),
 }
 
 
@@ -70,10 +108,13 @@ def main(argv: list[str] | None = None) -> int:
         if name == "split":
             p.add_argument("--force", action="store_true",
                            help="re-freeze the split (refused once the test set was used)")
+        if name == "test":
+            p.add_argument("--confirm", metavar="SENTENCE",
+                           help="the exact confirmation sentence, to prove this is deliberate")
     args = parser.parse_args(argv)
     try:
         COMMANDS[args.command][0](Paths(), args)
-    except RuntimeError as exc:
+    except (RuntimeError, FileNotFoundError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     return 0

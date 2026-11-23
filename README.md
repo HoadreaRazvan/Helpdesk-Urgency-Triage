@@ -12,9 +12,53 @@ python -m pip install -r requirements.txt
 python -m triage audit       # L5 · columns, cleaning, leakage, requesters, drift -> reports/audit.md
 python -m triage split       # L5 · freeze the time-based split -> data/split_manifest.json
 python -m triage baselines   # L5 · two baselines on validation -> reports/baselines.md
+python -m triage run         # L6–L7 · experiments, threshold, calibration, errors, shifts; freezes settings
+python -m triage test        # L8 · shows how to open the sealed test set, exactly once
 
 python -m pytest             # acceptance checks
 ```
+
+## Results on validation (May – Jun 2026)
+
+| Model | Recall | Precision | Flagged | Cost / 100 tickets |
+|---|---|---|---|---|
+| Baseline 1 · Majority class | 0.00 | – | 0% | 97.7 |
+| Baseline 2 · Keyword rule (impact + time pressure) | 0.50 | 0.35 | 28% | 66.7 |
+| **Model A · Logistic regression, TF-IDF text + tone (selected, t = 0.10)** | **0.71** | **0.32** | **43%** | **58.3** |
+| Model B · Random forest (t = 0.07) | 0.82 | 0.26 | 63% | 64.1 |
+| Leakage demo with post-submission columns | CV AUC 0.985: too good to be true, never used | | | |
+
+Costs: a missed urgent ticket = 5, a false alarm = 1, declared before modelling. The threshold is the minimum of the smoothed cost curve on validation. **The test set is still sealed**: it is opened once, in L8.
+
+What the data teaches:
+
+- **Impact and time pressure.** "This stops me from doing my job" and "the deadline is today" signal urgency.
+- **Tone, not the word.** In training, "Please treat as urgent." is urgent 100% of the time. "URGENT!!!" is urgent 6% of the time and "Very urgent." 8%, against a 16% average. A rule on the word "urgent" therefore catches only 26% of urgent tickets.
+- **Text carries the signal.** Without the description, average precision falls from 0.49 to 0.36.
+- **Plausible shift.** The `mobile_app` channel appears in May 2026, after training. Recall on it is 0.43 against 0.71 overall.
+
+## Deliverables (slide 9)
+
+| Deliverable | Where |
+|---|---|
+| Code and environment file | `triage/`, `requirements.txt` |
+| Experiment table | [`reports/experiments.md`](reports/experiments.md), `reports/experiments.csv` |
+| Model card | [`reports/model_card.md`](reports/model_card.md) |
+| Decision note | [`reports/decision_note.md`](reports/decision_note.md) |
+| L5 audit · L7 validation · error analysis | [`audit.md`](reports/audit.md) · [`validation_report.md`](reports/validation_report.md) · [`error_analysis.md`](reports/error_analysis.md) |
+
+## Acceptance checks
+
+| Check | Proof |
+|---|---|
+| No future information in features | Column whitelist, plus a guard in `make_X` that refuses any post-submission source (`test_make_X_refuses_post_submission_sources`) |
+| Reproducible split | Frozen manifest with SHA-256 fingerprints (`test_split_is_time_ordered_and_reproducible`) |
+| At least two meaningful baselines | Majority class and keyword rule (`test_model_earns_its_place`) |
+| Complete confusion matrix | TP / FN / FP / TN in every report (`test_confusion_matrix_is_complete`) |
+| Threshold not chosen on the test set | The pipeline is run twice, once with **every test label flipped**: model and threshold come out identical (`test_threshold_and_model_do_not_depend_on_test_labels`) |
+| At least ten inspected errors | 12 errors with hypotheses, in `reports/error_analysis.md` (`test_at_least_ten_errors_inspected`) |
+| Intended and prohibited use | Model card (`test_reports_contain_intended_and_prohibited_use`) |
+| Test used once | A lock is written before scoring; a second run is refused (`test_test_set_is_used_exactly_once`) |
 
 ## The data
 
@@ -53,6 +97,12 @@ The model will score **future** tickets, so the split follows time. 95% of later
 ```
 data/        instructor's CSV, data dictionary, frozen split manifest
 triage/      the Python package (python -m triage ...)
+  data.py      column policy and cleaning        split.py     frozen time-based split
+  features.py  submission-time model inputs      baselines.py majority class, keyword rule
+  models.py    the model ladder and grouped CV   evaluate.py  metrics, cost, threshold, calibration
+  analysis.py  errors, shifts, subgroups, queue  explain.py   which sentence raised the score
+  pipeline.py  L6–L7, freezes the settings       final.py     L8 one-shot test
+artifacts/   frozen_config.json (versioned); the model itself is rebuilt by `run`
 reports/     generated, human-readable deliverables
 tests/       acceptance checks (pytest)
 docs/        Romanian explanation of the project brief
