@@ -1,0 +1,9 @@
+[project]
+name = "responsible-service-triage"
+version = "1.0.0"
+description = "An advisory 'urgent review' flag for a support desk, evaluated honestly."
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

@@ -1,0 +1,7 @@
+# Same line endings on every OS.
+* text=auto eol=lf
+# The dataset is fingerprinted (SHA-256): keep it byte-for-byte identical.
+*.csv -text
+*.pptx binary
+*.png binary
+*.ico binary
