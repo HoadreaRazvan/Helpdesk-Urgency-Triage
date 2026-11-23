@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Triage Control Room</title>
+  <meta name="description" content="An advisory urgent-review flag for a support desk, evaluated honestly.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236250d6'/%3E%3Cpath d='M5 17h6l3-7 4 13 3-6h6' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    (function () {
+      var t = new URLSearchParams(location.search).get("theme");
+      if (t !== "light" && t !== "dark") { try { t = localStorage.getItem("triage-theme"); } catch (e) { t = null; } }
+      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+    })();
+  </script>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true">
+    <div class="aurora a1"></div><div class="aurora a2"></div><div class="aurora a3"></div>
+    <div class="gridlines"></div><div class="grain"></div>
+  </div>
+
+  <header class="topbar">
+    <a class="brand" href="#live" aria-label="Triage control room, top">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9"/><path d="M5 17h6l3-7 4 13 3-6h6"/></svg>
+      <span>Triage<b>Lab</b></span>
+    </a>
+    <nav class="sections" aria-label="Sections">
+      <a href="#live">Live</a><a href="#try">Try a ticket</a><a href="#lab">Threshold</a>
+      <a href="#ladder">Models</a><a href="#insights">Insights</a><a href="#errors">Errors</a>
+      <a href="#stress">Stress tests</a><a href="#data">Data</a><a href="#vault">Test vault</a>
+      <span class="nav-pill" aria-hidden="true"></span>
+    </nav>
+    <div class="top-actions">
+      <span class="advisory" title="The flag only changes what staff read first. It never refuses or closes a ticket.">
+        <i></i>Advisory only · staff decide
+      </span>
+      <button class="icon-btn" id="palette-btn" aria-label="Open command palette (Ctrl+K)" title="Command palette (Ctrl+K)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3z"/></svg>
+      </button>
+      <button class="icon-btn" id="theme-btn" aria-label="Switch light or dark theme" title="Theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO ------------------------------------------------------------- -->
+    <section id="live" class="hero">
+      <div class="hero-copy reveal">
+        <p class="eyebrow">Basics of AI · Project 2 · Responsible service triage</p>
+        <h1>Urgent tickets, <span class="grad">seen first.</span><br>People still decide.</h1>
+        <p class="lede">An advisory flag for a support desk. It learns only from what exists when a ticket is
+          submitted, and has to beat simple hand-written rules on an honest, time-based evaluation.</p>
+        <div class="kpis" id="kpis"></div>
+        <div class="cta">
+          <a class="btn primary" href="#try">Try a ticket <span aria-hidden="true">→</span></a>
+          <a class="btn ghost" href="#lab">Open the threshold lab</a>
+        </div>
+      </div>
+      <div class="card stream-card reveal">
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">Live replay · validation window</p>
+            <h2 class="card-title" id="stream-clock">May 2026</h2>
+          </div>
+          <div class="seg" role="group" aria-label="Replay controls">
+            <button id="stream-play" aria-label="Pause replay">❚❚</button>
+            <button id="stream-speed" aria-label="Replay speed">1×</button>
+          </div>
+        </div>
+        <canvas id="stream" aria-label="Animated replay of validation tickets. Height is the urgency score; tickets above the line are flagged. Drag to move the threshold." role="img"></canvas>
+        <div class="stream-foot">
+          <div class="legend">
+            <span><i class="dot urgent"></i>Urgent (panel label)</span>
+            <span><i class="dot calm"></i>Not urgent</span>
+            <span class="muted">Above the line = flagged · drag to move it</span>
+          </div>
+          <div class="counters" id="stream-counters" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPOSER --------------------------------------------------------- -->
+    <section id="try" class="block">
+      <header class="block-head reveal">
+        <p class="eyebrow">Try a ticket</p>
+        <h2>Write a ticket. See what the model notices.</h2>
+        <p>Every sentence is scored by taking it away and measuring how far the urgency score falls.
+          Orange raises the score, blue lowers it.</p>
+      </header>
+      <div class="composer reveal">
+        <form class="card composer-form" id="composer" autocomplete="off">
+          <div class="presets" id="presets" role="group" aria-label="Example tickets"></div>
+          <label class="field">
+            <span>Description <em id="char-count">0</em></span>
+            <textarea id="c-text" rows="5" maxlength="2000" spellcheck="true"></textarea>
+          </label>
+          <div class="field"><span>Category</span><div class="chips" id="c-category" role="radiogroup" aria-label="Category"></div></div>
+          <div class="field"><span>Channel</span><div class="chips" id="c-channel" role="radiogroup" aria-label="Channel"></div></div>
+          <div class="when">
+            <div class="field">
+              <span>Submitted</span>
+              <div class="dial-wrap">
+                <svg id="dial" viewBox="0 0 180 180" role="slider" tabindex="0" aria-label="Time of day" aria-valuemin="0" aria-valuemax="1435"></svg>
+                <div class="dial-side">
+                  <input type="time" id="c-time" step="300" aria-label="Time of day">
+                  <div class="chips small" id="c-weekday" role="radiogroup" aria-label="Weekday"></div>
+                  <div class="stepper" aria-label="Attachments">
+                    <span>Attachments</span>
+                    <button type="button" id="att-minus" aria-label="Fewer attachments">−</button>
+                    <output id="c-att">0</output>
+                    <button type="button" id="att-plus" aria-label="More attachments">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+        <div class="card composer-result" id="result" aria-live="polite">
+          <div class="gauge-wrap"><svg id="gauge" viewBox="0 0 240 140" aria-hidden="true"></svg>
+            <div class="gauge-read"><strong id="g-score">–</strong><span>urgency score</span></div>
+          </div>
+          <div class="verdict" id="verdict"></div>
+          <h3 class="mini-title">Why this score</h3>
+          <p class="highlighted" id="explained"></p>
+          <div class="field-effects" id="field-effects"></div>
+          <div class="legend diverging"><span><i class="sw urgent"></i>raises the score</span><span><i class="sw calm"></i>lowers it</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- THRESHOLD LAB ---------------------------------------------------- -->
+    <section id="lab" class="block">
+      <header class="block-head reveal">
+        <p class="eyebrow">Threshold lab · validation only</p>
+        <h2>0.5 is a default. The threshold is a decision.</h2>
+        <p>Each dot is one of the 660 validation tickets, placed by its score. Drag the line: everything to its
+          right is flagged. A missed urgent ticket costs more than a false alarm, so the cheapest line sits low.
+          The test set never enters this lab, by design.</p>
+      </header>
+      <div class="card lab reveal">
+        <div class="lab-controls">
+          <label class="range-field">
+            <span>Threshold <strong id="t-value">0.10</strong></span>
+            <input type="range" id="t-range" min="1" max="99" value="10" aria-label="Threshold">
+          </label>
+          <div class="cost-field">
+            <span>Cost of a miss</span>
+            <div class="stepper"><button type="button" data-cost="fn" data-d="-1" aria-label="Lower miss cost">−</button><output id="cost-fn">5</output><button type="button" data-cost="fn" data-d="1" aria-label="Raise miss cost">+</button></div>
+            <span>false alarm</span>
+            <div class="stepper"><button type="button" data-cost="fp" data-d="-1" aria-label="Lower false-alarm cost">−</button><output id="cost-fp">1</output><button type="button" data-cost="fp" data-d="1" aria-label="Raise false-alarm cost">+</button></div>
+          </div>
+          <div class="lab-buttons">
+            <button class="btn small ghost" id="t-optimal" type="button">Cheapest for these costs</button>
+            <button class="btn small" id="t-reset" type="button">Back to frozen</button>
+          </div>
+        </div>
+        <div class="lab-grid">
+          <div class="lab-plots">
+            <svg id="swarm" class="chart" aria-label="Validation tickets by score"></svg>
+            <svg id="costcurve" class="chart" aria-label="Total cost by threshold"></svg>
+            <div class="legend">
+              <span><i class="dot urgent"></i>Urgent</span><span><i class="dot calm"></i>Not urgent</span>
+              <span class="muted">Bright dots are mistakes at this threshold</span>
+              <span><i class="line-key"></i>Smoothed cost</span><span><i class="line-key raw"></i>Raw cost</span>
+              <button class="link" data-table="lab">Show as table</button>
+            </div>
+          </div>
+          <aside class="lab-side">
+            <div class="cm" id="cm"></div>
+            <dl class="metrics" id="lab-metrics"></dl>
+            <div class="queue" id="lab-queue"></div>
+          </aside>
+        </div>
+        <div class="table-view" id="table-lab" hidden></div>
+      </div>
+    </section>
+
+    <!-- LADDER ------------------------------------------------------------ -->
+    <section id="ladder" class="block">
+      <header class="block-head reveal">
+        <p class="eyebrow">The model ladder</p>
+        <h2>A model earns its place only by beating the simple rules.</h2>
+        <p>Cost per 100 validation tickets, with each model at its own cost-chosen threshold.
+          Accuracy would rank the do-nothing baseline among the best; cost does not.</p>
+      </header>
+      <div class="two reveal">
+        <div class="card"><h3 class="card-title">Cost per 100 tickets <span class="muted">(lower is better)</span></h3>
+          <svg id="ladder-chart" class="chart" aria-label="Cost per 100 tickets by model"></svg>
+          <div class="legend"><span class="muted">Highlighted: the selected model</span><button class="link" data-table="ladder">Show as table</button></div>
+          <div class="table-view" id="table-ladder" hidden></div>
+        </div>
+        <div class="card"><h3 class="card-title">Experiments · 5-fold CV grouped by requester</h3>
+          <svg id="exp-chart" class="chart" aria-label="Cross-validated average precision per experiment"></svg>
+          <div class="legend"><span class="muted">Dot: mean average precision · bar: ±1 standard deviation across folds</span><button class="link" data-table="exp">Show as table</button></div>
+          <div class="table-view" id="table-exp" hidden></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSIGHTS ---------------------------------------------------------- -->
+    <section id="insights" class="block">
+      <header class="block-head reveal">
+        <p class="eyebrow">What the data teaches</p>
+        <h2>The word “urgent” is not the signal. The tone is.</h2>
+        <p>Share of urgent tickets among training tickets containing each phrase. A calm request is almost always
+          urgent; shouting rarely is. A rule on the word alone catches only a quarter of urgent tickets.</p>
+      </header>
+      <div class="two wide-left reveal">
+        <div class="card"><svg id="tone-chart" class="chart" aria-label="Urgent rate by phrasing"></svg>
+          <div class="legend"><span class="muted">Line: average urgent rate in training</span><button class="link" data-table="tone">Show as table</button></div>
+          <div class="table-view" id="table-tone" hidden></div>
+        </div>
+        <div class="insight-stack" id="insight-cards"></div>
+      </div>
+    </section>
+
+    <!-- ERRORS ------------------------------------------------------------ -->
+    <section id="errors" class="block">
+      <header class="block-head reveal">
+        <p class="eyebrow">Calibration and mistakes</p>
+        <h2>Does 0.7 mean 70%? And where does it go wrong?</h2>
+        <p>The reliability diagram compares scores with what actually happened. Below are the most confident
+          mistakes on validation, each with a first hypothesis for the team to check.</p>
+      </header>
+      <div class="two narrow-left reveal">
+        <div class="card"><h3 class="card-title">Reliability</h3>
+          <svg id="calib-chart" class="chart" aria-label="Reliability diagram"></svg>
+          <div class="legend"><span class="muted">Dot size: tickets in the bin · diagonal: perfect calibration</span><button class="link" data-table="calib">Show as table</button></div>
+          <div class="table-view" id="table-calib" hidden></div>
+          <dl class="metrics compact" id="calib-metrics"></dl>
+        </div>
+        <div class="errors-wrap">
+          <div class="filter-row" role="group" aria-label="Filter mistakes">
+            <button class="chip on" data-kind="all">All</button>
+            <button class="chip" data-kind="missed">Missed urgent</button>
+            <button class="chip" data-kind="false_alarm">False alarms</button>
+          </div>
+          <div class="error-grid" id="error-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STRESS ------------------------------------------------------------ -->
+    <section id="stress" class="block">
+      <header class="block-head reveal">
+        <p class="eyebrow">Plausible shifts and subgroups</p>
+        <h2>Would it still work next semester?</h2>
+        <p>Simulated changes to the validation tickets, the real months, and the one channel the model never saw
+          in training. Deltas compare with validation as observed, at the frozen threshold.</p>
+      </header>
+      <div class="shift-grid reveal" id="shift-grid"></div>
+      <div class="card reveal slices-card">
+        <h3 class="card-title">Recall by subgroup <span class="muted">(validation, frozen threshold)</span></h3>
+        <svg id="slice-chart" class="chart" aria-label="Recall by subgroup"></svg>
+        <div class="legend"><span class="muted">No bar: too few urgent tickets to report a recall · dashed line: overall recall</span><button class="link" data-table="slices">Show as table</button></div>
+        <div class="table-view" id="table-slices" hidden></div>
+      </div>
+    </section>
+
+    <!-- DATA -------------------------------------------------------------- -->
+    <section id="data" class="block">
+      <header class="block-head reveal">
+        <p class="eyebrow">Data and split</p>
+        <h2>Trained on the past, judged on the future.</h2>
+        <p>The instructor's export, cleaned with row-level rules that never look at the label, then split by
+          time. Columns filled in after triage are excluded: on their own they already give the answer away.</p>
+      </header>
+      <div class="card reveal">
+        <h3 class="card-title">Tickets per month</h3>
+        <svg id="timeline" class="chart" aria-label="Tickets per month with train, validation and test windows"></svg>
+        <div class="legend"><button class="link" data-table="timeline">Show as table</button></div>
+        <div class="table-view" id="table-timeline" hidden></div>
+      </div>
+      <div class="three reveal">
+        <div class="card"><h3 class="card-title">Cleaning</h3><ul class="steps" id="cleaning"></ul></div>
+        <div class="card"><h3 class="card-title">Leakage scan <span class="muted">(AUC of one column alone)</span></h3>
+          <svg id="leak-chart" class="chart" aria-label="Single-column AUC"></svg>
+          <div class="legend"><span class="muted">Line: 0.85, too good to be true at submission time</span></div>
+        </div>
+        <div class="card"><h3 class="card-title">Repeated requesters</h3><div id="requesters"></div></div>
+      </div>
+    </section>
+
+    <!-- VAULT ------------------------------------------------------------- -->
+    <section id="vault" class="block">
+      <header class="block-head reveal">
+        <p class="eyebrow">L8 · the held-out test</p>
+        <h2>The test set is opened once.</h2>
+        <p>Frozen before any modelling and sealed with a fingerprint. It is opened a single time, with the settings
+          below, and the result is final: no more tuning afterwards.</p>
+      </header>
+      <div class="card vault reveal" id="vault-card">
+        <div class="vault-visual"><svg id="vault-door" viewBox="0 0 220 220" aria-hidden="true"></svg></div>
+        <div class="vault-body" id="vault-body"></div>
+      </div>
+    </section>
+
+    <!-- CHECKS ------------------------------------------------------------ -->
+    <section id="checks" class="block">
+      <header class="block-head reveal">
+        <p class="eyebrow">Acceptance checks</p>
+        <h2>Every check, with its proof.</h2>
+      </header>
+      <div class="checks reveal" id="check-list"></div>
+      <div class="reports reveal" id="report-links"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>Basics of Artificial Intelligence · Project 2 · Responsible service triage. The flag is a recommendation to
+      staff and never an automatic decision.</p>
+    <p class="muted" id="versions"></p>
+  </footer>
+
+  <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+
+  <div class="palette" id="palette" hidden>
+    <div class="palette-box" role="dialog" aria-modal="true" aria-label="Command palette">
+      <input id="palette-input" placeholder="Jump to a section or run a command…" aria-label="Command">
+      <ul id="palette-list" role="listbox"></ul>
+      <p class="palette-hint"><kbd>↑</kbd><kbd>↓</kbd> move · <kbd>Enter</kbd> run · <kbd>Esc</kbd> close</p>
+    </div>
+  </div>
+
+  <div class="boot" id="boot"><div class="boot-pulse"></div><p>Loading the frozen model…</p></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

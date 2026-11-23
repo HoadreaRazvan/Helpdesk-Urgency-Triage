@@ -339,6 +339,12 @@ def decision_md(r: dict) -> str:
         f"such as {', '.join(f'“{p}”' for p in DEADLINE_PHRASES[:3])}). If that early look influenced it, "
         "the effect is to make the baseline *harder* to beat, not easier.",
         "",
+        "The code that opens the test set is exercised by the automated tests on throw-away copies of "
+        "the project, and it was run once more on a copy to check the web interface's vault. Every "
+        "one of those runs came after the model, threshold and costs were frozen, and nothing was "
+        "changed afterwards. The official opening in L8 reproduces the same numbers, because the "
+        "frozen model is deterministic.",
+        "",
     ])
 
 

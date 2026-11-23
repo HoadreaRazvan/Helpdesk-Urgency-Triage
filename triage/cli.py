@@ -91,12 +91,19 @@ def cmd_test(paths: Paths, args) -> None:
     print(f"Results: {paths.test_results}  ·  model card updated")
 
 
+def cmd_serve(paths: Paths, args) -> None:
+    from .server import serve
+
+    serve(paths, port=args.port, open_browser=not args.no_browser)
+
+
 COMMANDS = {
     "audit": (cmd_audit, "L5: audit columns, cleaning, leakage, requesters and drift"),
     "split": (cmd_split, "L5: freeze the time-based train / validation / test split"),
     "baselines": (cmd_baselines, "L5: evaluate the two baselines on validation"),
     "run": (cmd_run, "L6-L7: experiments, threshold, calibration, errors, shifts; freeze settings"),
     "test": (cmd_test, "L8: open the sealed test set once (needs --confirm)"),
+    "serve": (cmd_serve, "Open the web interface (http://127.0.0.1:8000)"),
 }
 
 
@@ -111,6 +118,9 @@ def main(argv: list[str] | None = None) -> int:
         if name == "test":
             p.add_argument("--confirm", metavar="SENTENCE",
                            help="the exact confirmation sentence, to prove this is deliberate")
+        if name == "serve":
+            p.add_argument("--port", type=int, default=8000)
+            p.add_argument("--no-browser", action="store_true", help="do not open a browser tab")
     args = parser.parse_args(argv)
     try:
         COMMANDS[args.command][0](Paths(), args)

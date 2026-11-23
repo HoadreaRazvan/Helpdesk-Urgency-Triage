@@ -68,10 +68,6 @@ class Paths:
         return self.artifacts / "frozen_config.json"
 
     @property
-    def dashboard(self) -> Path:
-        return self.artifacts / "dashboard.json"
-
-    @property
     def test_lock(self) -> Path:
         return self.artifacts / "TEST_SET_USED.lock"
 

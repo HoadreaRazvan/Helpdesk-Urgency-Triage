@@ -4,18 +4,47 @@ An **advisory "urgent review" flag** for a support desk: Basics of Artificial In
 
 When a ticket arrives, the model suggests whether staff should look at it first. **It never refuses, closes or delays a request. A person always decides.** The goal is not the highest score. It is an honest evaluation that a real client could trust.
 
+![Triage control room](docs/screenshots/hero.jpg)
+
 ## Quick start
 
 ```bash
 python -m pip install -r requirements.txt
+python -m triage serve       # opens the control room at http://127.0.0.1:8000
+```
 
+The first `serve` trains the frozen model if it is missing (about half a minute). The interface needs no web framework, no Node and no build step: the server uses only the Python standard library and listens on this computer only.
+
+## The control room
+
+| Section | What it shows |
+|---|---|
+| **Live** | The validation window replayed in time. Tickets drift past at the height of their score; drag the line to move the threshold for every view on the page. |
+| **Try a ticket** | Write a ticket, or pick an example, and get its score live. Each sentence is coloured by how much it moves the score (occlusion), next to the effect of category, channel and time. A 24-hour dial sets the submission time. |
+| **Threshold lab** | All 660 validation tickets as dots, the cost curve on the same axis, the confusion matrix and the queue effect. All of them follow the draggable threshold and editable costs. Validation only, by design. |
+| **Models** | The model ladder by cost, and every experiment with its cross-validation spread, the leakage demo included. |
+| **Insights** | "Please treat as urgent." is urgent in 100% of training tickets; "URGENT!!!" in 6%. Tone, not the word. |
+| **Errors** | Reliability diagram and the 12 most confident mistakes, each with its sentence-level explanation and a hypothesis. |
+| **Stress tests** | Unseen channel, shouting, gaming, the real months and the real new channel, with recall / precision / cost deltas, plus recall by subgroup. |
+| **Data** | Tickets per month across the three windows, the cleaning log, the leakage scan and the requester analysis. |
+| **Test vault** | The sealed test set. It opens once, with a confirmation and a press-and-hold, then shows test against validation. |
+
+![Try a ticket](docs/screenshots/try-a-ticket.jpg)
+![Threshold lab](docs/screenshots/threshold-lab.jpg)
+
+Light and dark themes, a command palette (<kbd>Ctrl</kbd>+<kbd>K</kbd>), keyboard-operable controls, a table view behind every chart, reduced-motion support and a phone layout. Chart colours come from a colour-blind-validated palette: blue means not urgent, orange means urgent, on every chart.
+
+## Command line
+
+```bash
 python -m triage audit       # L5 · columns, cleaning, leakage, requesters, drift -> reports/audit.md
 python -m triage split       # L5 · freeze the time-based split -> data/split_manifest.json
 python -m triage baselines   # L5 · two baselines on validation -> reports/baselines.md
 python -m triage run         # L6–L7 · experiments, threshold, calibration, errors, shifts; freezes settings
 python -m triage test        # L8 · shows how to open the sealed test set, exactly once
+python -m triage serve       # the web interface (--port 8000, --no-browser)
 
-python -m pytest             # acceptance checks
+python -m pytest             # 34 acceptance and interface checks
 ```
 
 ## Results on validation (May – Jun 2026)
@@ -102,8 +131,14 @@ triage/      the Python package (python -m triage ...)
   models.py    the model ladder and grouped CV   evaluate.py  metrics, cost, threshold, calibration
   analysis.py  errors, shifts, subgroups, queue  explain.py   which sentence raised the score
   pipeline.py  L6–L7, freezes the settings       final.py     L8 one-shot test
+  server.py    local web server (standard library) dashboard.py data for the interface
+web/         the control room: index.html, styles.css, js/ (ES modules, no build step)
 artifacts/   frozen_config.json (versioned); the model itself is rebuilt by `run`
 reports/     generated, human-readable deliverables
-tests/       acceptance checks (pytest)
-docs/        Romanian explanation of the project brief
+tests/       acceptance and interface checks (pytest)
+docs/        Romanian explanation of the project brief, screenshots
 ```
+
+## Pe scurt (RO)
+
+Un semnal consultativ „urgent review” pentru tichetele unui help desk. Modelul doar sugerează ce citește personalul mai întâi; decizia rămâne la un om. Pornire: `python -m pip install -r requirements.txt`, apoi `python -m triage serve`. Setul de test este încă sigilat și se deschide o singură dată, în L8, din „Test vault” sau cu `python -m triage test`. Explicația completă a proiectului, în română: [`docs/P2_Explicatie_Responsible_Service_Triage.md`](docs/P2_Explicatie_Responsible_Service_Triage.md).

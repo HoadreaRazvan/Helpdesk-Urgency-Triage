@@ -69,3 +69,5 @@ The naive "urgent / ASAP" rule matches all three styles, which is why it catches
 ## Transparency
 
 Before the split code existed, a first exploration of the CSV looked at urgent rates over the whole year, test months included. Every label-based choice in the code uses the training or validation window only. The keyword rule was written by hand from domain reasoning (impact words such as “cannot work”, “can't work”, “unable to work” and time-pressure words such as “today”, “tonight”, “tomorrow”). If that early look influenced it, the effect is to make the baseline *harder* to beat, not easier.
+
+The code that opens the test set is exercised by the automated tests on throw-away copies of the project, and it was run once more on a copy to check the web interface's vault. Every one of those runs came after the model, threshold and costs were frozen, and nothing was changed afterwards. The official opening in L8 reproduces the same numbers, because the frozen model is deterministic.
